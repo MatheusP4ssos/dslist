@@ -38,12 +38,20 @@ public class GameListController {
 
     @GetMapping(value = "/{listId}/games")
     public List<GameMinDTO> findByList(@PathVariable Long listId) {
+        // Chama o serviço para buscar os jogos de uma lista específica
         List<GameMinDTO> result = gameService.findByList(listId);
         return result;
     }
 
+    /**
+     * Endpoint para movimentar um jogo de uma posição para outra dentro de uma lista.
+     *
+     * @param listId O ID da lista onde a movimentação será realizada.
+     * @param body Objeto contendo os índices de origem e destino da movimentação.
+     */
     @PostMapping(value = "/{listId}/replacement")
     public void move(@PathVariable Long listId,@RequestBody ReplacementDTO body) {
+        // Chama o serviço para realizar a movimentação do jogo na lista
         gamelistService.move(listId, body.getSourceIndex(), body.getDestinationIndex());
     }
 }

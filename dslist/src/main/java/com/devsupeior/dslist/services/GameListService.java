@@ -12,41 +12,54 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Serviço responsável por operações relacionadas à entidade Game.
- * Atua como intermediário entre o repositório (persistência) e os controladores (API).
+ * Serviço responsável por operações relacionadas à entidade GameList.
+ * Atua como intermediário entre os repositórios (acesso ao banco de dados) e os controladores (camada web/API).
  */
-
 @Service
 public class GameListService {
 
-    // Injeta automaticamente uma instância do GameRepository
     @Autowired
-    private GameListRepository gameListRepository;
+    private GameListRepository gameListRepository; // Repositório para acesso à tabela tb_game_list
 
     @Autowired
-    private GameRepository gameRepository;
+    private GameRepository gameRepository; // Repositório para acesso a jogos (tb_game)
 
-    // Método público que retorna uma lista de jogos em forma de DTO resumido
-    @Transactional(readOnly = true)//Grante integridade com conceitos ACID
+    /**
+     * Retorna todas as listas de jogos do banco, convertidas para DTOs.
+     * A anotação @Transactional(readOnly = true) evita bloqueios de escrita e melhora a performance.
+     */
+    @Transactional(readOnly = true)
     public List<GameListDto> findAll() {
-        // Busca todos as listas de jogos do banco de dados
-        List<GameList> result = gameListRepository.findAll();
-        // Converte a lista de entidades Gamelist para uma lista de DTO
-        return result.stream().map(x -> new GameListDto(x)).toList();
+        List<GameList> result = gameListRepository.findAll(); // Busca todas as listas
+        return result.stream().map(GameListDto::new).toList(); // Converte para DTO e retorna
     }
 
+    /**
+     * Reorganiza a posição de um jogo dentro de uma lista específica.
+     *
+     * @param listId         ID da lista que será modificada
+     * @param sourceIndex    Índice atual do jogo na lista
+     * @param destinationIndex Novo índice desejado
+     */
     @Transactional
-    public void move(Long listId, int sourceIndex, int destinationIndex){
+    public void move(Long listId, int sourceIndex, int destinationIndex) {
+
+        // Busca os jogos da lista (com suas posições), usando projeção
         List<GameMinProjection> list = gameRepository.searchByList(listId);
 
-      GameMinProjection obj = list.remove(sourceIndex);
-      list.add(destinationIndex, obj);
+        // Remove o jogo da posição original
+        GameMinProjection obj = list.remove(sourceIndex);
 
-      int min = sourceIndex < destinationIndex ? sourceIndex : destinationIndex;
-      int max = sourceIndex < destinationIndex ? destinationIndex : sourceIndex;
+        // Insere o jogo na nova posição
+        list.add(destinationIndex, obj);
 
-      for ( int i = min; i <= max; i++ ) {
-          gameListRepository.updateBelongingPosition(listId, list.get(i).getId(), i);
-      }
+        // Determina os limites para reordenar apenas os afetados
+        int min = Math.min(sourceIndex, destinationIndex);
+        int max = Math.max(sourceIndex, destinationIndex);
+
+        // Atualiza no banco a nova ordem para os jogos que mudaram de posição
+        for (int i = min; i <= max; i++) {
+            gameListRepository.updateBelongingPosition(listId, list.get(i).getId(), i);
+        }
     }
 }
