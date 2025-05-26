@@ -1,22 +1,21 @@
 package com.devsupeior.dslist.services;
 
+import com.devsupeior.dslist.dto.GameDTO;
 import com.devsupeior.dslist.dto.GameMinDTO;
 import com.devsupeior.dslist.entities.Game;
 
+import com.devsupeior.dslist.exception.ResourceNotFoundException;
+import com.devsupeior.dslist.projections.GameMinProjection;
 import com.devsupeior.dslist.repositories.GameRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
 
 /**
- * A classe GameService faz parte da camada de serviço da aplicação Spring Boot.
- * Ela é responsável por buscar todos os jogos (Game) no banco de dados e convertê-los para objetos
- * GameMinDTO, que contêm apenas informações resumidas de cada jogo. Esta classe atua
- * como intermediária entre o repositório (acesso ao banco) e o controlador (interface com o usuário
- * ou API).
+ * Serviço responsável por operações relacionadas à entidade Game.
+ * Atua como intermediário entre o repositório (persistência) e os controladores (API).
  */
 
 @Service
@@ -26,14 +25,33 @@ public class GameService {
     @Autowired
     private GameRepository gameRepository;
 
-    // Método público que retorna uma lista de jogos em forma de DTO resumido
-    public List<GameMinDTO> findAll() {
+    // Método público que retornar lista de jogos de forma detalhada
+    @Transactional(readOnly = true)//Grante integridade com conceitos ACID
+    public GameDTO findById(Long id) {
+        //busca jogos por meio do ID
+        Game result = gameRepository.findById(id).
+                orElseThrow(() -> new ResourceNotFoundException("Game not found" + id));
+        return new GameDTO(result);
+    }
 
+    // Método público que retorna uma lista de jogos em forma de DTO resumido
+    @Transactional(readOnly = true)//Garante integridade com conceitos ACID
+    public List<GameMinDTO> findAll() {
         // Busca todos os jogos do banco de dados
         List<Game> result = gameRepository.findAll();
-
         // Converte a lista de entidades Game para uma lista de GameMinDTO
         List<GameMinDTO> dto = result.stream().map(x -> new GameMinDTO(x)).toList();
         return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public List<GameMinDTO> findByList(Long listId) {
+        List<GameMinProjection> result = gameRepository.searchByList(listId);
+
+        if (result == null || result.isEmpty()) {
+            throw new ResourceNotFoundException("No games found for list ID: " + listId);
+        }
+
+        return result.stream().map(GameMinDTO::new).toList();
     }
 }

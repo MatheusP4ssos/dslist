@@ -1,10 +1,12 @@
 package com.devsupeior.dslist.controllers;
 
+import com.devsupeior.dslist.dto.GameDTO;
 import com.devsupeior.dslist.dto.GameMinDTO;
 import com.devsupeior.dslist.entities.Game;
 import com.devsupeior.dslist.services.GameService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,12 +27,18 @@ public class GameController {
     // Injeta automaticamente a dependência do serviço que contém a lógica de negócios para Game
     private GameService gameService;
 
-    @GetMapping
-    public List<GameMinDTO> findAll() {
-        // Chama o serviço para buscar todos os jogos resumidos
-
-        List<GameMinDTO> result = gameService.findAll(); // Retorna a lista para o cliente
+    @GetMapping(value = "/{id}")
+    public GameDTO findById(@PathVariable Long id) {
+        // Chama o serviço para filtrar jogos por id
+        GameDTO result = gameService.findById(id); // Filtra jogos por id
         return result;
+    }
+
+        @GetMapping
+        public List<GameMinDTO> findAll() {
+            // Chama o serviço para buscar todos os jogos resumidos
+            List<GameMinDTO> result = gameService.findAll(); // Retorna a lista para o cliente
+            return result;
 
     }
 }
